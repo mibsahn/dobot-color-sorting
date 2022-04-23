@@ -1,5 +1,9 @@
 %% LAB ASSIGNMENT 2
 clear;  clc;
-%%
+%% INITIALISATION
 
-%% Simulation
+%% SIMULATION
+
+%% Colision avoidance
+
+%% Animation
