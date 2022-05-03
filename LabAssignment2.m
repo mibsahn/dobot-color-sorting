@@ -36,7 +36,7 @@ end
 
 
 q0 = zeros(1,6);
-q = ikcon(initialPos, q0);
+% q = ikcon(initialPos, q0);
 
 
 
@@ -67,3 +67,44 @@ for i = 1:steps-1
     % Update next joint state
     qMatrix(i+1,:) = qMatrix(i,:) + deltaT * qdot';
 end
+
+%% PLOTTING
+figure(1)
+plot3(x(1,:),x(2,:),x(3,:),'k.','LineWidth',1)
+p560.plot(qMatrix,'trail','r-')
+
+for i = 1:6
+    figure(2)
+    subplot(3,2,i)
+    plot(qMatrix(:,i),'k','LineWidth',1)
+    title(['Joint ', num2str(i)])
+    ylabel('Angle (rad)')
+    refline(0,p560.qlim(i,1));
+    refline(0,p560.qlim(i,2));
+    
+    figure(3)
+    subplot(3,2,i)
+    plot(qdot(:,i),'k','LineWidth',1)
+    title(['Joint ',num2str(i)]);
+    ylabel('Velocity (rad/s)')
+    refline(0,0)
+end
+
+figure(4)
+subplot(2,1,1)
+plot(positionError'*1000,'LineWidth',1)
+refline(0,0)
+xlabel('Step')
+ylabel('Position Error (mm)')
+legend('X-Axis','Y-Axis','Z-Axis')
+
+subplot(2,1,2)
+plot(angleError','LineWidth',1)
+refline(0,0)
+xlabel('Step')
+ylabel('Angle Error (rad)')
+legend('Roll','Pitch','Yaw')
+figure(5)
+plot(m,'k','LineWidth',1)
+refline(0,epsilon)
+title('Manipulability')
