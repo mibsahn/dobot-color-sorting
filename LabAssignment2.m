@@ -1,6 +1,12 @@
 %% LAB ASSIGNMENT 2
 clear;  clc;
+
 %% INITIALISATION
+
+q0 = zeros(1,4);
+dobot = Dobot;
+dobot.model.plotopt = {'noname', 'noshadow'}; %'nojoints', , 'nowrist'
+dobot.model.plot(q0);
 
 %% GUI
 
@@ -35,7 +41,7 @@ for i=1:steps
 end
 
 
-q0 = zeros(1,6);
+
 % q = ikcon(initialPos, q0);
 
 
