@@ -34,7 +34,7 @@ classdef Dobot < handle
             name = ['Dobot_M_',datestr(now,'yyyymmddTHHMMSSFFF')];
             
             L1 = Link('d', 0.082,'a',     0,'alpha',    0,'offset',    0,'qlim', deg2rad([-135, 135]));
-            L2 = Link('d',     0,'a',     0,'alpha', pi/2,'offset',-pi/2,'qlim', deg2rad([   0,  85]));
+            L2 = Link('d',     0,'a',     0,'alpha', pi/2,'offset',    0,'qlim', deg2rad([   0,  85]));
             L3 = Link('d',     0,'a', 0.135,'alpha',    0,'offset',    0,'qlim', deg2rad([ -10,  95]));
             L4 = Link('d',     0,'a', 0.147,'alpha',    0,'offset',    0,'qlim', deg2rad([ -90,  90]));
 

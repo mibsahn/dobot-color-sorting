@@ -12,6 +12,8 @@ dobot.model.plot(q0);
 
 %% SIMULATION
 
+%% Visual servoing
+
 %% Colision avoidance
 
 %% Animation
@@ -21,13 +23,15 @@ dobot.model.plot(q0);
 % Trajectory planning
 
 totalTime = 10;
-deltaTime = 0.1;
+deltaTime = 0.4;
 steps = totalTime/deltaTime;
 delta = 2*pi/steps;
 minMani = 0.1;
 posStart = [];
 posEnd = [];
 initialPos = [];
+qMatrix = zeros(steps,6);       % Array for joint anglesR
+qdot = zeros(steps,6);          % Array for joint velocities
 
 trans = zeros(3,steps);
 rot = zeros(1,steps);
@@ -53,7 +57,7 @@ for i = 1:steps-1
     
     % Jacobian
     
-    J = [];
+    J = dobot.model.jacob0(qMatrix);
     
     % Manipulability
     
