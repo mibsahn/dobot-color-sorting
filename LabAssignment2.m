@@ -27,11 +27,11 @@ deltaTime = 0.4;
 steps = totalTime/deltaTime;
 delta = 2*pi/steps;
 minMani = 0.1;
-posStart = [];
-posEnd = [];
-initialPos = [];
-qMatrix = zeros(steps,6);       % Array for joint anglesR
-qdot = zeros(steps,6);          % Array for joint velocities
+posObjStart = [0.0 0.2 0.0];
+posObjEnd = [0.2 0.0 0.0];
+initialPos = q0;
+qMatrix = zeros(steps,4);       % Array for joint anglesR
+qdot = zeros(steps,4);          % Array for joint velocities
 
 trans = zeros(3,steps);
 rot = zeros(1,steps);
