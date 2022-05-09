@@ -9,7 +9,7 @@ dobot = Dobot;
 dobot.model.plotopt = {'noname', 'noshadow'}; %'nojoints', , 'nowrist'
 view(3);
 axis tight;
-dobot.model.animate([pi pi/3 -pi/3 0 ]);
+dobot.model.animate([pi 0 0 0 0]);
 
 %% GUI
 
@@ -31,13 +31,14 @@ steps = totalTime/deltaTime;
 delta = 2*pi/steps;
 minMani = 0.1;
 initialPos = q0;
-qdot = zeros(steps,4);          % Array for joint velocities
-qMat = zeros(steps,4,3);       % Array for joint state
-wayPoints = 2;
-wayPointMat = [0.3    0   0.15;
-               0.3    0   0.0];
-%0    -0.3   0.05;
-%                0    -0.3   0.18;
+qdot = zeros(steps,5);          % Array for joint velocities
+qMat = zeros(steps,5,3);       % Array for joint state
+wayPoints = 4;
+wayPointMat = [0    -0.3   0.05;
+               0    -0.3   0.18;
+               0.35    0   0.18;
+               0.35    0   0.05];
+
 trans = zeros(3,steps);
 rot = zeros(1,steps);
 
@@ -47,15 +48,13 @@ for i = 1:wayPoints-1
         trans(1,j,i) = (1-s(j))*wayPointMat(i,1) + s(j)*wayPointMat(i+1,1);             % Points in x
         trans(2,j,i) = (1-s(j))*wayPointMat(i,2) + s(j)*wayPointMat(i+1,2);            % Points in y
         trans(3,j,i) = (1-s(j))*wayPointMat(i,3) + s(j)*wayPointMat(i+1,3);                % Points in z
-        rot(3,j,i) = 0;                                       % Yaw angle
-        rot(2,j,i) = 0;
-        rot(1,j,i) = 0;
+        rot(1,j,i) = 0;                                       % Yaw angle
     end
     startPos = makehgtform('translate', trans(:,1,i));
-    qMat(1,:,i) = dobot.model.ikcon(startPos*trotx(pi), [pi pi/6 pi/3 0]);
+    qMat(1,:,i) = dobot.model.ikcon(startPos*trotx(pi), [3*pi/4 pi 0 0 0]);
 end
 %%
-qMat(:,4,1) = 0;
+
 
 %%
 for i = 1:wayPoints-1
@@ -63,13 +62,8 @@ for i = 1:wayPoints-1
     for j = 1:steps-1
         T = dobot.model.fkine(qMat(j,:,i));               % Get forward transformation at current joint state
         deltaTrans = trans(:,j+1,i) - T(1:3,4);         % Get position error from next waypoint
-        Rd = rpy2r(rot(1,i+1),rot(2,i+1),rot(3,i+1));                     % Get next RPY angles, convert to rotation matrix
-        Ra = T(1:3,1:3);                                                        % Current end-effector rotation matrix
-        Rdot = (1/deltaTime)*(Rd - Ra);                                                % Calculate rotation matrix error
-        S = Rdot*Ra';                                                           % Skew symmetric!
-        veloRot = [S(3,2);S(1,3);S(2,1)];                              % Check the structure of Skew Symmetric matrix!!
         veloTrans = deltaTrans / deltaTime;             % Calculate velocity at discrete time step
-        xdot = [veloTrans; veloRot];                          % Calculate end-effector velocity to reach next waypoint
+        xdot = [veloTrans; zeros(3,1)];                          % Calculate end-effector velocity to reach next waypoint      
         J = dobot.model.jacob0(qMat(j,:,i));         % Jacobian at current pose
         % Check Manipulability
         m = sqrt(det(J*J'));
@@ -78,12 +72,11 @@ for i = 1:wayPoints-1
         else
             lambda = 0;
         end
-        invJ = inv(J'*J + lambda*eye(4))*J';                                   % DLS Inverse
-        qdot(j,:,i) = (invJ * xdot)';                             % Singularity avoidance with DLS
+        invJ = inv(J'*J + lambda*eye(5))*J';                                   % DLS Inverse
+        qdot(j,:,i) = (invJ * xdot)';                             % Singularity avoidance with DLS        
         qMat(j+1,:,i) = qMat(j,:,i) + deltaTime*qdot(j,:,i);        % Update next joint state
         dobot.model.animate(qMat(j,:,i));
-        drawnow();
-        pause(0.5);
+        drawnow();pause(0.5);
     end
     delete(text_h);
 end
