@@ -39,10 +39,10 @@ classdef Dobot < handle
 %             L4 = Link('d',    0,'a', 0.147,'alpha', pi/2,'offset',0, 'qlim', [-pi/2 pi/2]);
 %             L5 = Link('d',    0,'a',      0.04,'alpha',    0,'offset',    0, 'qlim', deg2rad([-85 85]));
             
-            L1 = Link('d',0.132,'a',0,'alpha',pi/2,'offset',pi,'qlim', deg2rad([0 360]));
+            L1 = Link('d',0.132,'a',0,'alpha',pi/2,'offset',0,'qlim', deg2rad([-135 135]));
             L2 = Link('d',0,'a',0.135,'alpha',0,'offset',0, 'qlim', deg2rad([5 80]));
-            L3 = Link('d',0,'a',0.147,'alpha',0,'offset',0, 'qlim', deg2rad([15 170])); %pi/2 –q2 actual offset
-            L4 = Link('d',0.0,'a',0.061,'alpha',-pi/2,'offset',0, 'qlim', [-pi/4 pi/4]);
+            L3 = Link('d',0,'a',0.147,'alpha',0,'offset',0, 'qlim', deg2rad([-90 170])); %pi/2 –q2 actual offset
+            L4 = Link('d',0.0,'a',0.061,'alpha',-pi/2,'offset',0, 'qlim', [-pi/2 pi/2]);
 %             L5 = Link('d',-0.0754,'a',0.0,'alpha',pi,'offset',0, 'qlim', deg2rad([-pi/2 pi/2]));
             
 %             L1 = Link('d',0.137,'a',0,'alpha',-pi/2,'offset',0,'qlim', deg2rad([-135 135]));

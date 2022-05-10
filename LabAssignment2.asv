@@ -9,7 +9,7 @@ dobot = Dobot;
 dobot.model.plotopt = {'noname', 'noshadow'}; %'nojoints', , 'nowrist'
 view(3);
 axis tight;
-dobot.model.animate([pi 0 0 0 0]);
+dobot.model.animate([-pi/2 pi/3 -pi/3 0 ]);
 
 %% GUI
 
@@ -31,13 +31,11 @@ steps = totalTime/deltaTime;
 delta = 2*pi/steps;
 minMani = 0.1;
 initialPos = q0;
-qdot = zeros(steps,5);          % Array for joint velocities
-qMat = zeros(steps,5,3);       % Array for joint state
-wayPoints = 4;
-wayPointMat = [0    -0.3   0.05;
-               0    -0.3   0.18;
-               0.35    0   0.18;
-               0.35    0   0.05];
+qdot = zeros(steps,4);          % Array for joint velocities
+qMat = zeros(steps,4,3);       % Array for joint state
+wayPoints = 2;
+wayPointMat = [0.3    0.0   (0.15+0.0754); ...
+               0.3    0.0   (0.02+0.0754)];
 
 trans = zeros(3,steps);
 rot = zeros(1,steps);
@@ -48,22 +46,34 @@ for i = 1:wayPoints-1
         trans(1,j,i) = (1-s(j))*wayPointMat(i,1) + s(j)*wayPointMat(i+1,1);             % Points in x
         trans(2,j,i) = (1-s(j))*wayPointMat(i,2) + s(j)*wayPointMat(i+1,2);            % Points in y
         trans(3,j,i) = (1-s(j))*wayPointMat(i,3) + s(j)*wayPointMat(i+1,3);                % Points in z
-        rot(1,j,i) = 0;                                       % Yaw angle
+        rot(3,j,i) = 0;                                       % Yaw angle
+        rot(2,j,i) = 0;
+        rot(1,j,i) = 0;
     end
     startPos = makehgtform('translate', trans(:,1,i));
-    qMat(1,:,i) = dobot.model.ikcon(startPos*trotx(pi), [3*pi/4 pi 0 0 0]);
+    qMat(1,:,i) = dobot.model.ikcon(startPos*trotx(90), [3*pi/2 pi/6 -pi/3 pi/3]);
 end
+% qMat(:,4,1) = 0;
+Trapezoidal(dobot,[]
 %%
+
+%0    -0.3   0.05;
+%                0    -0.3   0.18;
 
 
 %%
 for i = 1:wayPoints-1
     text_h = text(-0.5, 0, 0.5, ['Waypoint ' num2str(i)], 'FontSize', 10, 'Color', [.6 .2 .6]);
-    for j = 1:steps-1
+    for j = 1:1
         T = dobot.model.fkine(qMat(j,:,i));               % Get forward transformation at current joint state
         deltaTrans = trans(:,j+1,i) - T(1:3,4);         % Get position error from next waypoint
+        Rd = rpy2r(rot(1,i+1),rot(2,i+1),rot(3,i+1));                     % Get next RPY angles, convert to rotation matrix
+        Ra = T(1:3,1:3);                                                        % Current end-effector rotation matrix
+        Rdot = (1/deltaTime)*(Rd - Ra);                                                % Calculate rotation matrix error
+        S = Rdot*Ra';                                                           % Skew symmetric!
+        veloRot = [S(3,2);S(1,3);S(2,1)];                              % Check the structure of Skew Symmetric matrix!!
         veloTrans = deltaTrans / deltaTime;             % Calculate velocity at discrete time step
-        xdot = [veloTrans; zeros(3,1)];                          % Calculate end-effector velocity to reach next waypoint      
+        xdot = [veloTrans; veloRot];                          % Calculate end-effector velocity to reach next waypoint
         J = dobot.model.jacob0(qMat(j,:,i));         % Jacobian at current pose
         % Check Manipulability
         m = sqrt(det(J*J'));
@@ -72,20 +82,31 @@ for i = 1:wayPoints-1
         else
             lambda = 0;
         end
-        invJ = inv(J'*J + lambda*eye(5))*J';                                   % DLS Inverse
-        qdot(j,:,i) = (invJ * xdot)';                             % Singularity avoidance with DLS        
+        invJ = inv(J'*J + lambda*eye(4))*J';                                   % DLS Inverse
+        qdot(j,:,i) = (invJ * xdot)';                             % Singularity avoidance with DLS
+%         for j = 1:6                                                             % Loop through joints 1 to 6
+%             if qMatrix(i,j) + deltaT*qdot(i,j) < p560.qlim(j,1)                     % If next joint angle is lower than joint limit...
+%                 qdot(i,j) = 0; % Stop the motor
+%             elseif qMatrix(i,j) + deltaT*qdot(i,j) > p560.qlim(j,2)                 % If next joint angle is greater than joint limit ...
+%                 qdot(i,j) = 0; % Stop the motor
+%             end
+%         end
         qMat(j+1,:,i) = qMat(j,:,i) + deltaTime*qdot(j,:,i);        % Update next joint state
         dobot.model.animate(qMat(j,:,i));
-        drawnow();pause(0.5);
+        drawnow();
+        pause(0.5);
     end
     delete(text_h);
 end
+
+%%
+
 
 %% PLOTTING
 % figure(1)
 % plot3(x(1,:),x(2,:),x(3,:),'k.','LineWidth',1)
 % p560.plot(qMatrix,'trail','r-')
-% 
+%
 % for i = 1:6
 %     figure(2)
 %     subplot(3,2,i)
@@ -94,7 +115,7 @@ end
 %     ylabel('Angle (rad)')
 %     refline(0,p560.qlim(i,1));
 %     refline(0,p560.qlim(i,2));
-%     
+%
 %     figure(3)
 %     subplot(3,2,i)
 %     plot(qdot(:,i),'k','LineWidth',1)
@@ -102,7 +123,7 @@ end
 %     ylabel('Velocity (rad/s)')
 %     refline(0,0)
 % end
-% 
+%
 % figure(4)
 % subplot(2,1,1)
 % plot(positionError'*1000,'LineWidth',1)
@@ -110,7 +131,7 @@ end
 % xlabel('Step')
 % ylabel('Position Error (mm)')
 % legend('X-Axis','Y-Axis','Z-Axis')
-% 
+%
 % subplot(2,1,2)
 % plot(angleError','LineWidth',1)
 % refline(0,0)

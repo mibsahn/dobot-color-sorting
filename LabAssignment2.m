@@ -9,7 +9,7 @@ dobot = Dobot;
 dobot.model.plotopt = {'noname', 'noshadow'}; %'nojoints', , 'nowrist'
 view(3);
 axis tight;
-dobot.model.animate([pi pi/3 -pi/3 0 ]);
+dobot.model.animate([-pi/2 pi/3 -pi/3 0 ]);
 
 %% GUI
 
@@ -34,13 +34,12 @@ initialPos = q0;
 qdot = zeros(steps,4);          % Array for joint velocities
 qMat = zeros(steps,4,3);       % Array for joint state
 wayPoints = 2;
-wayPointMat = [0.3    0   0.15;
-               0.3    0   0.0];
-%0    -0.3   0.05;
-%                0    -0.3   0.18;
+wayPointMat = [0.3    0.0   (0.15+0.0754); ...
+               0.3    0.0   (0.02+0.0754)];
+
 trans = zeros(3,steps);
 rot = zeros(1,steps);
-
+Trapezoidal(dobot,[0 -0.3 0; 0.3 0 0.15],steps);
 s = lspb(0,1,steps);                                    % Trapezoidal trajectory scalar
 for i = 1:wayPoints-1
     for j = 1:steps
@@ -52,10 +51,15 @@ for i = 1:wayPoints-1
         rot(1,j,i) = 0;
     end
     startPos = makehgtform('translate', trans(:,1,i));
-    qMat(1,:,i) = dobot.model.ikcon(startPos*trotx(pi), [pi pi/6 pi/3 0]);
+    qMat(1,:,i) = dobot.model.ikcon(startPos*trotx(90), [0 pi/6 -pi/3 pi/3]);
 end
+% qMat(:,4,1) = 0;
+
 %%
-qMat(:,4,1) = 0;
+
+%0    -0.3   0.05;
+%                0    -0.3   0.18;
+
 
 %%
 for i = 1:wayPoints-1
@@ -80,6 +84,13 @@ for i = 1:wayPoints-1
         end
         invJ = inv(J'*J + lambda*eye(4))*J';                                   % DLS Inverse
         qdot(j,:,i) = (invJ * xdot)';                             % Singularity avoidance with DLS
+%         for j = 1:6                                                             % Loop through joints 1 to 6
+%             if qMatrix(i,j) + deltaT*qdot(i,j) < p560.qlim(j,1)                     % If next joint angle is lower than joint limit...
+%                 qdot(i,j) = 0; % Stop the motor
+%             elseif qMatrix(i,j) + deltaT*qdot(i,j) > p560.qlim(j,2)                 % If next joint angle is greater than joint limit ...
+%                 qdot(i,j) = 0; % Stop the motor
+%             end
+%         end
         qMat(j+1,:,i) = qMat(j,:,i) + deltaTime*qdot(j,:,i);        % Update next joint state
         dobot.model.animate(qMat(j,:,i));
         drawnow();
@@ -88,11 +99,14 @@ for i = 1:wayPoints-1
     delete(text_h);
 end
 
+%%
+
+
 %% PLOTTING
 % figure(1)
 % plot3(x(1,:),x(2,:),x(3,:),'k.','LineWidth',1)
 % p560.plot(qMatrix,'trail','r-')
-% 
+%
 % for i = 1:6
 %     figure(2)
 %     subplot(3,2,i)
@@ -101,7 +115,7 @@ end
 %     ylabel('Angle (rad)')
 %     refline(0,p560.qlim(i,1));
 %     refline(0,p560.qlim(i,2));
-%     
+%
 %     figure(3)
 %     subplot(3,2,i)
 %     plot(qdot(:,i),'k','LineWidth',1)
@@ -109,7 +123,7 @@ end
 %     ylabel('Velocity (rad/s)')
 %     refline(0,0)
 % end
-% 
+%
 % figure(4)
 % subplot(2,1,1)
 % plot(positionError'*1000,'LineWidth',1)
@@ -117,7 +131,7 @@ end
 % xlabel('Step')
 % ylabel('Position Error (mm)')
 % legend('X-Axis','Y-Axis','Z-Axis')
-% 
+%
 % subplot(2,1,2)
 % plot(angleError','LineWidth',1)
 % refline(0,0)
