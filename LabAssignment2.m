@@ -30,28 +30,32 @@ deltaTime = 0.4;
 steps = totalTime/deltaTime;
 delta = 2*pi/steps;
 minMani = 0.1;
-initialPos = q0;
+
 qdot = zeros(steps,4);          % Array for joint velocities
 qMat = zeros(steps,4,3);       % Array for joint state
 wayPoints = 2;
-wayPointMat = [0.3    0.0   (0.15+0.0754); ...
+wayPointRMRC = [0.3    0.0   (0.15+0.0754); ...
                0.3    0.0   (0.02+0.0754)];
-
+wayPointMat = [0    -0.3     0;
+               0.3   0    0.15;
+               0.3   0.0  (0.02+0.0754);
+               0    -0.27   0;
+               0.03 -0.27   0];
 trans = zeros(3,steps);
 rot = zeros(1,steps);
 Trapezoidal(dobot,[0 -0.3 0; 0.3 0 0.15],steps);
 s = lspb(0,1,steps);                                    % Trapezoidal trajectory scalar
 for i = 1:wayPoints-1
     for j = 1:steps
-        trans(1,j,i) = (1-s(j))*wayPointMat(i,1) + s(j)*wayPointMat(i+1,1);             % Points in x
-        trans(2,j,i) = (1-s(j))*wayPointMat(i,2) + s(j)*wayPointMat(i+1,2);            % Points in y
-        trans(3,j,i) = (1-s(j))*wayPointMat(i,3) + s(j)*wayPointMat(i+1,3);                % Points in z
+        trans(1,j,i) = (1-s(j))*wayPointRMRC(i,1) + s(j)*wayPointRMRC(i+1,1);             % Points in x
+        trans(2,j,i) = (1-s(j))*wayPointRMRC(i,2) + s(j)*wayPointRMRC(i+1,2);            % Points in y
+        trans(3,j,i) = (1-s(j))*wayPointRMRC(i,3) + s(j)*wayPointRMRC(i+1,3);                % Points in z
         rot(3,j,i) = 0;                                       % Yaw angle
         rot(2,j,i) = 0;
         rot(1,j,i) = 0;
     end
     startPos = makehgtform('translate', trans(:,1,i));
-    qMat(1,:,i) = dobot.model.ikcon(startPos*trotx(90), [0 pi/6 -pi/3 pi/3]);
+    qMat(1,:,i) = dobot.model.ikcon(startPos, [0 pi/6 -pi/3 0]);
 end
 % qMat(:,4,1) = 0;
 
@@ -100,6 +104,10 @@ for i = 1:wayPoints-1
 end
 
 %%
+Trapezoidal(dobot,wayPointMat(3:4,:),steps);
+Trapezoidal(dobot,[wayPointMat(4,:);wayPointMat(2,:)],steps);
+Trapezoidal(dobot,[wayPointMat(3,:);wayPointMat(5,:)],steps);
+Trapezoidal(dobot,[wayPointMat(5,:);wayPointMat(2,:)],steps);
 
 
 %% PLOTTING

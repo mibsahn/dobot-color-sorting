@@ -3,7 +3,6 @@ function Trapezoidal(robot, path, steps)
 % Trapezoidal Return joint state
 % Use ikcon to calculate required joint state of robot
 
-orientBrickEffector = trotx(pi);
 pos1 = makehgtform('translate', path(1,:));
 pos2 = makehgtform('translate', path(2,:));
 
