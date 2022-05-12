@@ -1,4 +1,4 @@
-function RMRC(steps)
+function RMRC(dobot, steps, deltaTime, obj)
 %RMRC Move robot in RMRC
 %   Generate trajectory and animate robot motion
 
@@ -6,7 +6,8 @@ minMani = 0.1;
 wayPoints = 2;
 wayPointRMRC = [0.3    0.0   (0.15+0.0754); ...
                 0.3    0.0   (0.02+0.0754)];
-qMat = zeros(steps,4);
+
+qMat = zeros(steps,5);
 trans = zeros(3,steps);
 rot = zeros(3,steps);
 
@@ -21,13 +22,13 @@ for i = 1:wayPoints-1
         rot(1,j,i) = 0;
     end
     startPos = makehgtform('translate', trans(:,1,i));
-    qMat(1,:,i) = dobot.model.ikcon(startPos, [0 pi/6 -pi/3 0]);
+    qMat(1,:,i) = dobot.model.ikcon(startPos, [0 pi/3 -pi/3 0 0]);
 end
 
 
 %%
 for i = 1:wayPoints-1
-    text_h = text(-0.5, 0, 0.5, ['Waypoint ' num2str(i)], 'FontSize', 10, 'Color', [.6 .2 .6]);
+    text_h = text(-0.5, 0, 0.5, ['RMRC Mod ' num2str(i)], 'FontSize', 10, 'Color', [.6 .2 .6]);
     for j = 1:steps-1
         T = dobot.model.fkine(qMat(j,:,i));               % Get forward transformation at current joint state
         deltaTrans = trans(:,j+1,i) - T(1:3,4);         % Get position error from next waypoint
@@ -46,7 +47,7 @@ for i = 1:wayPoints-1
         else
             lambda = 0;
         end
-        invJ = inv(J'*J + lambda*eye(4))*J';                                   % DLS Inverse
+        invJ = inv(J'*J + lambda*eye(5))*J';                                   % DLS Inverse
         qdot(j,:,i) = (invJ * xdot)';                             % Singularity avoidance with DLS
 %         for j = 1:6                                                             % Loop through joints 1 to 6
 %             if qMatrix(i,j) + deltaT*qdot(i,j) < p560.qlim(j,1)                     % If next joint angle is lower than joint limit...
@@ -57,11 +58,14 @@ for i = 1:wayPoints-1
 %         end
         qMat(j+1,:,i) = qMat(j,:,i) + deltaTime*qdot(j,:,i);        % Update next joint state
         dobot.model.animate(qMat(j,:,i));
+        obj.MoveObj([(T(1:3,4)'+[0.02 0 -0.0954]) 0 0 0]);
         drawnow();
-        pause(0.5);
+        pause(0.1);
     end
     delete(text_h);
 end
-
+obj.MoveObj([0.3 0 -0.1 0 0 0]);
+pause(0.2);
+obj.MoveObj([0.3 0 -0.16 0 0 0]);
 end
 

@@ -23,7 +23,7 @@ classdef Dobot < handle
             % robot =
             self.GetDobotRobot();
             % robot =
-%             self.PlotAndColourRobot();%robot,workspace);
+            self.PlotAndColourRobot();%robot,workspace);
         end
         
         %% GetDobotRobot
@@ -33,23 +33,11 @@ classdef Dobot < handle
             pause(0.001);
             name = ['Dobot_M_',datestr(now,'yyyymmddTHHMMSSFFF')];
             
-%             L1 = Link('d',0.137,'a',      0,'alpha',-pi/2,'offset',    0, 'qlim', deg2rad([-135 135])); %(0.05+0.082)
-%             L2 = Link('d',    0,'a', 0.0,'alpha',    0,'offset',-pi/2, 'qlim', deg2rad([5 80]));
-%             L3 = Link('d',    0,'a',     0.135,'alpha',    0,'offset',    0, 'qlim', deg2rad([15 170])); %pi/2 –q2 actual offset
-%             L4 = Link('d',    0,'a', 0.147,'alpha', pi/2,'offset',0, 'qlim', [-pi/2 pi/2]);
-%             L5 = Link('d',    0,'a',      0.04,'alpha',    0,'offset',    0, 'qlim', deg2rad([-85 85]));
-            
-            L1 = Link('d',0.132,'a',0,'alpha',pi/2,'offset',0,'qlim', deg2rad([-135 135]));
-            L2 = Link('d',0,'a',0.135,'alpha',0,'offset',0, 'qlim', deg2rad([5 80]));
-            L3 = Link('d',0,'a',0.147,'alpha',0,'offset',0, 'qlim', deg2rad([-90 170])); %pi/2 –q2 actual offset
-            L4 = Link('d',0.0,'a',0.061,'alpha',-pi/2,'offset',0, 'qlim', [-pi/2 pi/2]);
-%             L5 = Link('d',-0.0754,'a',0.0,'alpha',pi,'offset',0, 'qlim', deg2rad([-pi/2 pi/2]));
-            
-%             L1 = Link('d',0.137,'a',0,'alpha',-pi/2,'offset',0,'qlim', deg2rad([-135 135]));
-%             L2 = Link('d',0,'a',0.1393,'alpha',0,'offset',-pi/2, 'qlim', deg2rad([5 80]));
-%             L3 = Link('d',0,'a',0.16193,'alpha',0,'offset',0, 'qlim', deg2rad([15 170])); %pi/2 –q2 actual offset
-%             L4 = Link('d',0,'a',0.0597,'alpha',pi/2,'offset',-pi/2, 'qlim', [-pi/2 pi/2]);
-%             L5 = Link('d',0,'a',0,'alpha',0,'offset',0, 'qlim', deg2rad([-85 85]));
+            L1 = Link('d',0.137,'a',0,'alpha',-pi/2,'offset',0,'qlim', deg2rad([-135 135]));
+            L2 = Link('d',0,'a',0.1393,'alpha',0,'offset',-pi/2, 'qlim', deg2rad([5 80]));
+            L3 = Link('d',0,'a',0.16193,'alpha',0,'offset',0, 'qlim', deg2rad([15 170])); %pi/2 –q2 actual offset
+            L4 = Link('d',0,'a',0.0597,'alpha',pi/2,'offset',-pi/2, 'qlim', [-pi/2 pi/2]);
+            %             L5 = Link('d',0,'a',0,'alpha',0,'offset',0, 'qlim', deg2rad([-85 85]));
             
             self.model = SerialLink([L1 L2 L3 L4],'name',name);
             
@@ -59,11 +47,7 @@ classdef Dobot < handle
         % colour them in if data is available
         function PlotAndColourRobot(self)%robot,workspace)
             for linkIndex = 0:self.model.n
-                if self.useGripper && linkIndex == self.model.n
-                    [faceData, vertexData, plyData{linkIndex+1} ] = plyread(['dobotLink',num2str(linkIndex),'Gripper.ply'],'tri'); %#ok<AGROW>
-                else
-                    [faceData, vertexData, plyData{linkIndex+1} ] = plyread(['dobotLink',num2str(linkIndex),'.ply'],'tri'); %#ok<AGROW>
-                end
+                [faceData, vertexData, plyData{linkIndex+1} ] = plyread(['dobot_Link',num2str(linkIndex),'.ply'],'tri'); %#ok<AGROW>
                 self.model.faces{linkIndex+1} = faceData;
                 self.model.points{linkIndex+1} = vertexData;
             end
