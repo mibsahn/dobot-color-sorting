@@ -9,8 +9,8 @@ dobot = Dobot;
 dobot.model.plotopt = {'noname', 'noshadow'}; %'nojoints', , 'nowrist'
 view(3);
 axis tight;
-dobot.model.animate([-pi/2 pi/3 -pi/3 0 ]);
-
+dobot.model.plot([-pi/2 pi/3 -pi/3 0 ]);
+hold on
 %% GUI
 
 %% SIMULATION
@@ -35,15 +35,17 @@ qdot = zeros(steps,4);          % Array for joint velocities
 qMat = zeros(steps,4,3);       % Array for joint state
 wayPoints = 2;
 wayPointRMRC = [0.3    0.0   (0.15+0.0754); ...
-               0.3    0.0   (0.02+0.0754)];
+                0.3    0.0   (0.02+0.0754)];
 wayPointMat = [0    -0.3     0;
                0.3   0    0.15;
                0.3   0.0  (0.02+0.0754);
                0    -0.27   0;
                0.03 -0.27   0];
 trans = zeros(3,steps);
-rot = zeros(1,steps);
+rot = zeros(3,steps);
+RMRC(dobot, steps, deltaTime);
 Trapezoidal(dobot,[0 -0.3 0; 0.3 0 0.15],steps);
+
 s = lspb(0,1,steps);                                    % Trapezoidal trajectory scalar
 for i = 1:wayPoints-1
     for j = 1:steps
@@ -57,12 +59,6 @@ for i = 1:wayPoints-1
     startPos = makehgtform('translate', trans(:,1,i));
     qMat(1,:,i) = dobot.model.ikcon(startPos, [0 pi/6 -pi/3 0]);
 end
-% qMat(:,4,1) = 0;
-
-%%
-
-%0    -0.3   0.05;
-%                0    -0.3   0.18;
 
 
 %%
@@ -104,12 +100,15 @@ for i = 1:wayPoints-1
 end
 
 %%
-Trapezoidal(dobot,wayPointMat(3:4,:),steps);
-Trapezoidal(dobot,[wayPointMat(4,:);wayPointMat(2,:)],steps);
-Trapezoidal(dobot,[wayPointMat(3,:);wayPointMat(5,:)],steps);
-Trapezoidal(dobot,[wayPointMat(5,:);wayPointMat(2,:)],steps);
+% Trapezoidal(dobot,wayPointMat(3:4,:),steps);
+% Trapezoidal(dobot,[wayPointMat(4,:);wayPointMat(2,:)],steps);
+% Trapezoidal(dobot,[wayPointMat(3,:);wayPointMat(5,:)],steps);
+% Trapezoidal(dobot,[wayPointMat(5,:);wayPointMat(2,:)],steps);
 
-
+%%
+sugarCane = PlaceObj('SugarCaneR.ply');
+TrapezoidalObject(dobot,[wayPointMat(3,:);wayPointMat(5,:)],steps, sugarCane);
+% PlaceObject('SugarCaneY.ply');
 %% PLOTTING
 % figure(1)
 % plot3(x(1,:),x(2,:),x(3,:),'k.','LineWidth',1)

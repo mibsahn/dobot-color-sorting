@@ -23,7 +23,7 @@ classdef Dobot < handle
             % robot =
             self.GetDobotRobot();
             % robot =
-            self.PlotAndColourRobot();%robot,workspace);
+%             self.PlotAndColourRobot();%robot,workspace);
         end
         
         %% GetDobotRobot
