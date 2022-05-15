@@ -82,6 +82,7 @@ end
 dobot.animate(qMat)
 
 %%
+% RMRC halt on obstacle detected
 qMat = trapezoidal(dobot,[wayPointMat(1,:);wayPointMat(6,:)],steps);
 qMat = [qMat;trapezoidal(dobot,[wayPointMat(6,:);wayPointMat(7,:)],steps)];
 qMat = [qMat;trapezoidal(dobot,[wayPointMat(7,:);wayPointMat(2,:)],steps)];
