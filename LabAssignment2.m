@@ -1,5 +1,5 @@
 %% LAB ASSIGNMENT 2
-clear;  clc;
+clear;  clc; clf;
 
 %% INITIALISATION
 
