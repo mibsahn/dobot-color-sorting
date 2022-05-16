@@ -119,13 +119,13 @@ classdef DobotClass < handle
         end
         %% RMRC
         function rmrc(self, steps, deltaTime, obj)
-        %RMRC Move robot in RMRC
-        %   Generate trajectory and animate robot motion
+            %RMRC Move robot in RMRC
+            %   Generate trajectory and animate robot motion
             
             minMani = 0.1;
             wayPoints = 2;
             wayPointRMRC = [0.3    0.0   (0.15+0.0754);
-                            0.3    0.0   (0.02+0.0754)];
+                0.3    0.0   (0.02+0.0754)];
             
             qMat = zeros(steps,5);
             trans = zeros(3,steps);
@@ -142,7 +142,7 @@ classdef DobotClass < handle
                 startPos = makehgtform('translate', trans(:,1,i));
                 qMat(1,:,i) = self.model.ikcon(startPos, [0 pi/3 -pi/3 0 0]);
             end
-
+            
             for i = 1:wayPoints-1
                 text_h = text(-0.5, 0.5, 0.45, ['RMRC Mode Juice Extraction'], 'FontSize', 12, 'Color', [.6 .2 .6]);
                 for j = 1:steps-1
@@ -169,13 +169,13 @@ classdef DobotClass < handle
                     end
                     invJ = inv(J'*J + lambda*eye(5))*J';                                   % DLS Inverse
                     qdot(j,:,i) = (invJ * xdot)';                             % Singularity avoidance with DLS
-            %         for j = 1:6                                                             % Loop through joints 1 to 6
-            %             if qMatrix(i,j) + deltaT*qdot(i,j) < p560.qlim(j,1)                     % If next joint angle is lower than joint limit...
-            %                 qdot(i,j) = 0; % Stop the motor
-            %             elseif qMatrix(i,j) + deltaT*qdot(i,j) > p560.qlim(j,2)                 % If next joint angle is greater than joint limit ...
-            %                 qdot(i,j) = 0; % Stop the motor
-            %             end
-            %         end
+                    %         for j = 1:6                                                             % Loop through joints 1 to 6
+                    %             if qMatrix(i,j) + deltaT*qdot(i,j) < p560.qlim(j,1)                     % If next joint angle is lower than joint limit...
+                    %                 qdot(i,j) = 0; % Stop the motor
+                    %             elseif qMatrix(i,j) + deltaT*qdot(i,j) > p560.qlim(j,2)                 % If next joint angle is greater than joint limit ...
+                    %                 qdot(i,j) = 0; % Stop the motor
+                    %             end
+                    %         end
                     qMat(j+1,:,i) = qMat(j,:,i) + deltaTime*qdot(j,:,i);        % Update next joint state
                     self.model.animate(qMat(j,:,i));
                     obj.MoveObj([(T(1:3,4)'+[0.02 0 -0.0954]) 0 0 0]);
@@ -199,233 +199,261 @@ classdef DobotClass < handle
                 bool = 0;
             end
         end
+        
+        %% Trapezoidal velocity profile
+        function qMat = trapezoidal(self, path, steps, animate, payload)
+            pos1 = makehgtform('translate', path(1,:));
+            pos2 = makehgtform('translate', path(2,:));
+            
+            qStart = self.model.ikcon(pos1, [0 pi/3 pi/3 0 0]);
+            qEnd = self.model.ikcon(pos2, [-pi/2 pi/3 pi/3 0 0]);
+            
+            s = lspb(0,1,steps);
+            
+            
+            for i = 1:steps
+                qMat(i,:) = (1-s(i))*qStart + s(i)*qEnd;
+                if (nargin < 4)
+                    continue
+                elseif (animate)
+                    self.model.animate(qMat(i,:));
+                    if (nargin == 5)
+                        effectorPos = self.model.fkine(qMat(i,:));
+                        payload.MoveObj([(effectorPos(1:3,4)'+[0.02 0 -0.0954]) 0 0 0]);
+                    end
+                    drawnow();
+                    pause(0.02)
+                end
+            end
+        end
+        
         %% Calculate Trajectory
-%         function angleMatrix = CalculateTrajectory(self,initial_q,final_q,steps)
-%             scalar = lspb(0,1,steps);
-%             angleMatrix = nan(steps,self.model.n);
-%             for i = 1:steps
-%                 angleMatrix(i,:) = (1-scalar(i))*initial_q + scalar(i)*final_q;
-%             end
-%         end
-%         %% Move Robot
-%         function GoTo(self,x,y,steps,boolean)
-%             
-%             if(self.draw == 0)
-%                 z = 0.05;
-%             else
-%                 z = 0;
-%             end
-%             
-%             location = transl(x,y,z);
-%             angle = atan(location(2,4) / location(1,4));
-%             xOffset = cos(angle) * self.toolOffset(1,4);
-%             yOffset = sin(angle) * self.toolOffset(1,4);
-%             location = location * transl(xOffset,yOffset,self.toolOffset(3,4));
-%             robotJoints = self.model.getpos();
-%             newJoints = self.model.ikcon(location);
-%             jointMatrix = self.CalculateTrajectory(robotJoints, newJoints, steps);
-%             
-%             for i = 1:steps
-%                 self.Stopcheck();
-%                 jointMatrix(i,5) = 0;
-%                 self.model.animate(jointMatrix(i,:));
-%                 if(boolean)
-%                     self.DrawingSpace();
-%                 end
-%                 pause(0.02);
-%                 self.Stopcheck();
-%             end
-%         end
-%         %% Dobot Requirement
-%         function requirement(self)
-%             load dobot_q
-%             for i = 1:338
-%                 q1REAL = dobot_q(i,1);
-%                 q2REAL = dobot_q(i,2);
-%                 q3REAL = dobot_q(i,3);
-%                 q4REAL = pi - (q2REAL + q3REAL);
-%                 
-%                 q3MODEL = pi/2 - q2REAL + q3REAL;
-%                 q4MODEL = pi - (q2REAL + q3MODEL);
-%                 
-%                 qMove = [q1REAL,q2REAL,q3MODEL,q4MODEL];
-%                 self.simulation.animate(qMove);
-%                 drawnow();
-%                 pause(0.05);
-%             end
-%         end
-%         %% Dobot move both real & simulation
-%         function moveBothJoints(self, q1, q2, q3)
-%             if(self.eStop == false)
-%                 q1REAL = q1;
-%                 q2REAL = q2;
-%                 q3REAL = q3;
-%                 q4REAL = pi - (q2REAL + q3REAL);
-%                 
-%                 q3MODEL = pi/2 - q2REAL + q3REAL;
-%                 q4MODEL = pi - (q2REAL + q3MODEL);
-%                 q5MODEL = 0;
-%                 
-%                 qMoveMODEL = [q1REAL,q2REAL,q3MODEL,q4MODEL, q5MODEL];
-%                 qMoveREAL = [q1REAL, q2REAL, q3REAL, q4REAL];                
-%                 
-%                 self.model.animate(qMoveMODEL);
-%                 drawnow();
-%             end
-%         end
-%         
-%         %% Dobot move both real & simulation
-%         function moveBothLocation(self, x,y,z)
-%             if(self.eStop == false)
-%                 location = transl(x,y,z);
-%                 robotJoints = self.model.getpos();
-%                 newJoints = self.model.ikcon(location);
-%                 
-%                 cartsvc_ = rossvcclient('/dobot_magician/PTP/set_cartesian_pos');
-%                 cartmsg_.TargetPoints=[x,y,z,0];
-%                 cartmsg_ = rosmessage(cartsvc_);
-%                 cartmsg_.TargetPoints=[x,y,z,0];
-%                 cartsvc_.call(cartmsg_)
-%                 
-%                 self.model.animate(newJoints);
-%                 drawnow();
-%             end
-%         end
-%         %% draw box
-%         function drawBox(self)
-%             for i = -0.2:0.005:0.2
-%                 point = transl(0.1,i,0);
-%                 point = point * self.toolOffset;
-%                 newJoints = self.model.ikcon(point);
-%                 self.model.animate(newJoints);
-%                 self.DrawingSpace()
-%                 pause(0.02);
-%             end
-%             for i = 0.1:0.005:0.2
-%                 point = transl(i,0.2,0);
-%                 point = point * self.toolOffset;
-%                 newJoints = self.model.ikcon(point);
-%                 self.model.animate(newJoints);
-%                 self.DrawingSpace()
-%                 pause(0.02);
-%             end
-%             
-%             for i = 0.2:-0.005:-0.2
-%                 point = transl(0.2,i,0);
-%                 point = point * self.toolOffset;
-%                 newJoints = self.model.ikcon(point);
-%                 self.model.animate(newJoints);
-%                 self.DrawingSpace()
-%                 pause(0.02);
-%             end
-%             
-%             for i = 0.2:-0.005:0.1
-%                 point = transl(i,-0.2,0);
-%                 point = point * self.toolOffset;
-%                 newJoints = self.model.ikcon(point);
-%                 self.model.animate(newJoints);
-%                 self.DrawingSpace()
-%                 pause(0.02);
-%             end
-%         end
-%         %% lift & lower
-%         function lift(self,boolean)
-%             if(boolean == true)
-%                 movement = transl(0,0,0.05);
-%                 self.draw = 0;
-%             end
-%             if(boolean == false)
-%                 movement = transl(0,0,-0.05);
-%                 self.draw = 1;
-%             end
-%             jointAngles = self.model.getpos();
-%             endEffector = self.model.fkine(jointAngles);
-%             endEffector = endEffector * movement;
-%             NewjointAngles = self.model.ikcon(endEffector);
-%             jointMatrix = self.CalculateTrajectory(jointAngles, NewjointAngles, 75);
-%             for i = 1:75
-%                 jointMatrix(i,5) = 0;
-%                 self.model.animate(jointMatrix(i,:));
-%                 pause(0.02);
-%                 self.Stopcheck()
-%             end
-%         end
-%         %%
-%         function    GotoREAL(self,x,y)
-%             cartsvc_ = rossvcclient('/dobot_magician/PTP/set_cartesian_pos');
-%             cartmsg_ = rosmessage(cartsvc_);
-%             if(self.draw == true)
-%                 cartmsg_.TargetPoints=[x,y,-0.08,0];
-%             else
-%                 cartmsg_.TargetPoints=[x,y,-0.05,0];
-%             end
-%             cartsvc_.call(cartmsg_)
-%             
-%         end
-%         
-%         %%
-%         function    GotoREALXYZ(self,x,y,z)
-%             cartsvc_ = rossvcclient('/dobot_magician/PTP/set_cartesian_pos');
-%             cartmsg_ = rosmessage(cartsvc_);
-%                 cartmsg_.TargetPoints=[x,y,z,0];
-%             cartsvc_.call(cartmsg_)           
-%         end
-%         
-%         
-%         %% draw animation
-%         function DrawingSpace(self)
-%             
-%             blastStartTr = self.model.fkine(self.model.getpos()) * transl(0,0,-0.04);
-%             blastStartPnt = blastStartTr(1:3,4)';
-%             
-%             blastEndTr = self.model.fkine(self.model.getpos()) * transl(0,0,-0.08);
-%             blastEndPnt = blastEndTr(1:3,4)';
-%             blastPlot_h = plot3([blastStartPnt(1),blastEndPnt(1)],[blastStartPnt(2),blastEndPnt(2)],[blastStartPnt(3),blastEndPnt(3)],'r');
-%             axis equal;
-%             
-%             planeXntersect = 0.01;
-%             planeBounds = [0.15,0.62,-0.22,0.25,0,0];
-%             [X,Y] = meshgrid(planeBounds(1):0.01:planeBounds(2),planeBounds(3):0.01:planeBounds(4));
-%             Z = repmat(planeXntersect,size(Y,1),size(Y,2));
-%             surf(X,Y,Z);
-%             
-%             planePnt = [0,0,0];
-%             planeNormal = [0,0,1];
-%             
-%             [intersectionPoints,check] = self.LinePlaneIntersection(planeNormal,planePnt,blastStartPnt,blastEndPnt);
-%             if check == 1
-%                 intersectionPointPlot_h = plot3(intersectionPoints(:,1),intersectionPoints(:,2),intersectionPoints(:,3),'g*');
-%             end
-%             
-%         end
-%         %% LinePlaneIntersection
-%         function [intersectionPoint,check] = LinePlaneIntersection(self,planeNormal,pointOnPlane,point1OnLine,point2OnLine)
-%             
-%             intersectionPoint = [0 0 0];
-%             u = point2OnLine - point1OnLine;
-%             w = point1OnLine - pointOnPlane;
-%             D = dot(planeNormal,u);
-%             N = -dot(planeNormal,w);
-%             check = 0; %#ok<NASGU>
-%             if abs(D) < 10^-7        % The segment is parallel to plane
-%                 if N == 0           % The segment lies in plane
-%                     check = 2;
-%                     return
-%                 else
-%                     check = 0;       %no intersection
-%                     return
-%                 end
-%             end
-%             
-%             %compute the intersection parameter
-%             sI = N / D;
-%             intersectionPoint = point1OnLine + sI.*u;
-%             
-%             if (sI < 0 || sI > 1)
-%                 check= 3;          %The intersection point  lies outside the segment, so there is no intersection
-%             else
-%                 check=1;
-%             end
-%         end
+        %         function angleMatrix = CalculateTrajectory(self,initial_q,final_q,steps)
+        %             scalar = lspb(0,1,steps);
+        %             angleMatrix = nan(steps,self.model.n);
+        %             for i = 1:steps
+        %                 angleMatrix(i,:) = (1-scalar(i))*initial_q + scalar(i)*final_q;
+        %             end
+        %         end
+        %         %% Move Robot
+        %         function GoTo(self,x,y,steps,boolean)
+        %
+        %             if(self.draw == 0)
+        %                 z = 0.05;
+        %             else
+        %                 z = 0;
+        %             end
+        %
+        %             location = transl(x,y,z);
+        %             angle = atan(location(2,4) / location(1,4));
+        %             xOffset = cos(angle) * self.toolOffset(1,4);
+        %             yOffset = sin(angle) * self.toolOffset(1,4);
+        %             location = location * transl(xOffset,yOffset,self.toolOffset(3,4));
+        %             robotJoints = self.model.getpos();
+        %             newJoints = self.model.ikcon(location);
+        %             jointMatrix = self.CalculateTrajectory(robotJoints, newJoints, steps);
+        %
+        %             for i = 1:steps
+        %                 self.Stopcheck();
+        %                 jointMatrix(i,5) = 0;
+        %                 self.model.animate(jointMatrix(i,:));
+        %                 if(boolean)
+        %                     self.DrawingSpace();
+        %                 end
+        %                 pause(0.02);
+        %                 self.Stopcheck();
+        %             end
+        %         end
+        %         %% Dobot Requirement
+        %         function requirement(self)
+        %             load dobot_q
+        %             for i = 1:338
+        %                 q1REAL = dobot_q(i,1);
+        %                 q2REAL = dobot_q(i,2);
+        %                 q3REAL = dobot_q(i,3);
+        %                 q4REAL = pi - (q2REAL + q3REAL);
+        %
+        %                 q3MODEL = pi/2 - q2REAL + q3REAL;
+        %                 q4MODEL = pi - (q2REAL + q3MODEL);
+        %
+        %                 qMove = [q1REAL,q2REAL,q3MODEL,q4MODEL];
+        %                 self.simulation.animate(qMove);
+        %                 drawnow();
+        %                 pause(0.05);
+        %             end
+        %         end
+        %         %% Dobot move both real & simulation
+        %         function moveBothJoints(self, q1, q2, q3)
+        %             if(self.eStop == false)
+        %                 q1REAL = q1;
+        %                 q2REAL = q2;
+        %                 q3REAL = q3;
+        %                 q4REAL = pi - (q2REAL + q3REAL);
+        %
+        %                 q3MODEL = pi/2 - q2REAL + q3REAL;
+        %                 q4MODEL = pi - (q2REAL + q3MODEL);
+        %                 q5MODEL = 0;
+        %
+        %                 qMoveMODEL = [q1REAL,q2REAL,q3MODEL,q4MODEL, q5MODEL];
+        %                 qMoveREAL = [q1REAL, q2REAL, q3REAL, q4REAL];
+        %
+        %                 self.model.animate(qMoveMODEL);
+        %                 drawnow();
+        %             end
+        %         end
+        %
+        %         %% Dobot move both real & simulation
+        %         function moveBothLocation(self, x,y,z)
+        %             if(self.eStop == false)
+        %                 location = transl(x,y,z);
+        %                 robotJoints = self.model.getpos();
+        %                 newJoints = self.model.ikcon(location);
+        %
+        %                 cartsvc_ = rossvcclient('/dobot_magician/PTP/set_cartesian_pos');
+        %                 cartmsg_.TargetPoints=[x,y,z,0];
+        %                 cartmsg_ = rosmessage(cartsvc_);
+        %                 cartmsg_.TargetPoints=[x,y,z,0];
+        %                 cartsvc_.call(cartmsg_)
+        %
+        %                 self.model.animate(newJoints);
+        %                 drawnow();
+        %             end
+        %         end
+        %         %% draw box
+        %         function drawBox(self)
+        %             for i = -0.2:0.005:0.2
+        %                 point = transl(0.1,i,0);
+        %                 point = point * self.toolOffset;
+        %                 newJoints = self.model.ikcon(point);
+        %                 self.model.animate(newJoints);
+        %                 self.DrawingSpace()
+        %                 pause(0.02);
+        %             end
+        %             for i = 0.1:0.005:0.2
+        %                 point = transl(i,0.2,0);
+        %                 point = point * self.toolOffset;
+        %                 newJoints = self.model.ikcon(point);
+        %                 self.model.animate(newJoints);
+        %                 self.DrawingSpace()
+        %                 pause(0.02);
+        %             end
+        %
+        %             for i = 0.2:-0.005:-0.2
+        %                 point = transl(0.2,i,0);
+        %                 point = point * self.toolOffset;
+        %                 newJoints = self.model.ikcon(point);
+        %                 self.model.animate(newJoints);
+        %                 self.DrawingSpace()
+        %                 pause(0.02);
+        %             end
+        %
+        %             for i = 0.2:-0.005:0.1
+        %                 point = transl(i,-0.2,0);
+        %                 point = point * self.toolOffset;
+        %                 newJoints = self.model.ikcon(point);
+        %                 self.model.animate(newJoints);
+        %                 self.DrawingSpace()
+        %                 pause(0.02);
+        %             end
+        %         end
+        %         %% lift & lower
+        %         function lift(self,boolean)
+        %             if(boolean == true)
+        %                 movement = transl(0,0,0.05);
+        %                 self.draw = 0;
+        %             end
+        %             if(boolean == false)
+        %                 movement = transl(0,0,-0.05);
+        %                 self.draw = 1;
+        %             end
+        %             jointAngles = self.model.getpos();
+        %             endEffector = self.model.fkine(jointAngles);
+        %             endEffector = endEffector * movement;
+        %             NewjointAngles = self.model.ikcon(endEffector);
+        %             jointMatrix = self.CalculateTrajectory(jointAngles, NewjointAngles, 75);
+        %             for i = 1:75
+        %                 jointMatrix(i,5) = 0;
+        %                 self.model.animate(jointMatrix(i,:));
+        %                 pause(0.02);
+        %                 self.Stopcheck()
+        %             end
+        %         end
+        %         %%
+        %         function    GotoREAL(self,x,y)
+        %             cartsvc_ = rossvcclient('/dobot_magician/PTP/set_cartesian_pos');
+        %             cartmsg_ = rosmessage(cartsvc_);
+        %             if(self.draw == true)
+        %                 cartmsg_.TargetPoints=[x,y,-0.08,0];
+        %             else
+        %                 cartmsg_.TargetPoints=[x,y,-0.05,0];
+        %             end
+        %             cartsvc_.call(cartmsg_)
+        %
+        %         end
+        %
+        %         %%
+        %         function    GotoREALXYZ(self,x,y,z)
+        %             cartsvc_ = rossvcclient('/dobot_magician/PTP/set_cartesian_pos');
+        %             cartmsg_ = rosmessage(cartsvc_);
+        %                 cartmsg_.TargetPoints=[x,y,z,0];
+        %             cartsvc_.call(cartmsg_)
+        %         end
+        %
+        %
+        %         %% draw animation
+        %         function DrawingSpace(self)
+        %
+        %             blastStartTr = self.model.fkine(self.model.getpos()) * transl(0,0,-0.04);
+        %             blastStartPnt = blastStartTr(1:3,4)';
+        %
+        %             blastEndTr = self.model.fkine(self.model.getpos()) * transl(0,0,-0.08);
+        %             blastEndPnt = blastEndTr(1:3,4)';
+        %             blastPlot_h = plot3([blastStartPnt(1),blastEndPnt(1)],[blastStartPnt(2),blastEndPnt(2)],[blastStartPnt(3),blastEndPnt(3)],'r');
+        %             axis equal;
+        %
+        %             planeXntersect = 0.01;
+        %             planeBounds = [0.15,0.62,-0.22,0.25,0,0];
+        %             [X,Y] = meshgrid(planeBounds(1):0.01:planeBounds(2),planeBounds(3):0.01:planeBounds(4));
+        %             Z = repmat(planeXntersect,size(Y,1),size(Y,2));
+        %             surf(X,Y,Z);
+        %
+        %             planePnt = [0,0,0];
+        %             planeNormal = [0,0,1];
+        %
+        %             [intersectionPoints,check] = self.LinePlaneIntersection(planeNormal,planePnt,blastStartPnt,blastEndPnt);
+        %             if check == 1
+        %                 intersectionPointPlot_h = plot3(intersectionPoints(:,1),intersectionPoints(:,2),intersectionPoints(:,3),'g*');
+        %             end
+        %
+        %         end
+        %         %% LinePlaneIntersection
+        %         function [intersectionPoint,check] = LinePlaneIntersection(self,planeNormal,pointOnPlane,point1OnLine,point2OnLine)
+        %
+        %             intersectionPoint = [0 0 0];
+        %             u = point2OnLine - point1OnLine;
+        %             w = point1OnLine - pointOnPlane;
+        %             D = dot(planeNormal,u);
+        %             N = -dot(planeNormal,w);
+        %             check = 0; %#ok<NASGU>
+        %             if abs(D) < 10^-7        % The segment is parallel to plane
+        %                 if N == 0           % The segment lies in plane
+        %                     check = 2;
+        %                     return
+        %                 else
+        %                     check = 0;       %no intersection
+        %                     return
+        %                 end
+        %             end
+        %
+        %             %compute the intersection parameter
+        %             sI = N / D;
+        %             intersectionPoint = point1OnLine + sI.*u;
+        %
+        %             if (sI < 0 || sI > 1)
+        %                 check= 3;          %The intersection point  lies outside the segment, so there is no intersection
+        %             else
+        %                 check=1;
+        %             end
+        %         end
     end
 end

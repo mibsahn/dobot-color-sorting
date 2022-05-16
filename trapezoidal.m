@@ -1,4 +1,4 @@
-function qMat = Trapezoidal(robot, path, steps, animate, payload)
+function qMat = trapezoidal(robot, path, steps, animate, payload)
 pos1 = makehgtform('translate', path(1,:));
 pos2 = makehgtform('translate', path(2,:));
 
