@@ -5,14 +5,15 @@ addpath(genpath('./Addition'));
 
 q0 = zeros(1,5);
 dobot = DobotClass;
-% dobot.model.plot(q0);
-dobot.PlotModel3d;
+dobot.;
 view(3)
 axis tight
 hold on
 
 % Initialise working environment of Dobot
 sugarCane = PlotEnvironment;
+
+
 
 [X, Y, Z] = ellipsoid(0.3,0,0.05,0.05,0.05,0.01);
 hand = surf(X,Y,Z);
@@ -41,13 +42,13 @@ delta = 2*pi/steps;
 offsetZ = 0.0754;
 offsetX = 0.02;
 wayPointMat = [0,    -0.3,     offsetZ;
-               0.3,   0,       (0.15+offsetZ);
-               0.3,   0.0,     (0.02+offsetZ);
-               0,    -0.27,    offsetZ;
-               0.03, -0.27,    offsetZ;
-               0,    -0.3,     0.2+offsetZ;
-               0.3,   0,       0.2+offsetZ;
-               0,    -0.3,     (0.15+offsetZ)];
+                0.3,   0,       (0.15+offsetZ);
+                0.3,   0.0,     (0.02+offsetZ);
+                0,    -0.27,    offsetZ;
+                0.03, -0.27,    offsetZ;
+                0,    -0.3,     0.2+offsetZ;
+                0.3,   0,       0.2+offsetZ;
+                0     -0.3      (0.15+offsetZ)];
 
 %%
 % RMRC halt on obstacle detected

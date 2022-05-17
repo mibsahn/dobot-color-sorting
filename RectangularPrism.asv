@@ -1,3 +1,4 @@
+% <<<<<<< HEAD
 function [vertex,face,faceNormals,plot_h] = RectangularPrism(lower,upper,plotOptions,axis_h)
 if nargin<4
         axis_h=gca;
@@ -67,5 +68,6 @@ end
 %% If you want to plot the faces
 if isfield(plotOptions,'plotFaces') && plotOptions.plotFaces
     tcolor = [.2 .2 .8];
+    
     plot_h.faces = patch('Faces',face,'Vertices',vertex,'FaceVertexCData',tcolor,'FaceColor','flat','lineStyle','none');
 end

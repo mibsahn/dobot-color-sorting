@@ -17,5 +17,7 @@ sugarCane(2).MoveObj([ [0 -0.27 -0.02] zeros(1,3)]);
 sugarCane(3) = PlaceObj('SugarCaneY.ply');
 sugarCane(3).MoveObj([ [0.03 -0.27 -0.02] zeros(1,3)]);
 
+disp('Finished importing environment.')
+
 end
 
