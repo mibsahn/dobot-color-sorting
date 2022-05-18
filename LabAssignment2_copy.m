@@ -3,6 +3,7 @@ clear; close; clf; clc;
 addpath(genpath('./Addition'));
 %% INITIALISATION
 
+eStop = false;
 q0 = zeros(1,5);
 dobot = DobotClass;
 dobot.PlotModel3d;
@@ -13,23 +14,11 @@ hold on
 % Initialise working environment of Dobot
 sugarCane = PlotEnvironment;
 
-
-
-[X, Y, Z] = ellipsoid(0.3,0,0.05,0.05,0.05,0.01);
-hand = surf(X,Y,Z);
-dobot.sensorP = [0.3,0,0.05];
-
 axis tight
 camlight;
 pause(4);
 %% GUI
-
-%% SIMULATION
-
-%% Visual servoing
-
-%% Colision avoidance
-
+gui = gui();
 %% Animation
 % Resolved Motion Rate Control (RMRC)
 
@@ -52,73 +41,59 @@ wayPointMat = [0,    -0.3,     offsetZ;
 
 % Place obstacle in environment
 hold on
-% plotOpts.plotFaces = true;
-% for i = 1:5
-%     [vertex,faces,faceNormals,jug] = RectangularPrism([(-0.3+0.1*i),-0.2,0],[(-0.4+0.1*i),-0.1,0.1],plotOpts);
-%     pause(0.1);
-%     if (i < 5)
-%     try delete(jug.faces); end;
-%     end
-% end
-% % [vertex,faces,faceNormals,jug] = RectangularPrism([0.2,-0.2,0],[0.1,-0.1,0.2],plotOpts);
-% %%
-% qMat = dobot.trapezoidal([wayPointMat(1,:);wayPointMat(2,:)],steps); % Secure planned joint state of robot
-% 
-% for i = 1: size(qMat,1)
-%     [intersectP, result(i)] = IsCollision(dobot.model,qMat(i,:),faces,vertex,faceNormals,false);
-%     if result(i)
-%         break;
-%     end
-% end
-
-% dobot.animate(qMat)
-% dobot.trapezoidal(
+                                                                                                                                                                                                        
 %%
 % RMRC halt on obstacle detected
 qMat = dobot.trapezoidal([wayPointMat(1,:);wayPointMat(6,:)],steps);
 qMat = [qMat;dobot.trapezoidal([wayPointMat(6,:);wayPointMat(7,:)],steps)];
 qMat = [qMat;dobot.trapezoidal([wayPointMat(7,:);wayPointMat(2,:)],steps)];
 dobot.animate(qMat,sugarCane(1));
-dobot.rmrc(steps, deltaTime, sugarCane(1));
+qMat = [qMat;dobot.rmrc(steps, deltaTime, sugarCane(1))];
 
-%%
-dobot.trapezoidal(wayPointMat(3:4,:),steps,true);
-dobot.trapezoidal([wayPointMat(4,:);wayPointMat(8,:)],steps, true, sugarCane(2));
-dobot.trapezoidal([wayPointMat(8,:);wayPointMat(2,:)],steps, true, sugarCane(2));
-dobot.rmrc(steps, deltaTime, sugarCane(2));
+qMat = [qMat;dobot.trapezoidal(wayPointMat(3:4,:),steps,true)];
+qMat = [qMat;dobot.trapezoidal([wayPointMat(4,:);wayPointMat(8,:)],steps, true, sugarCane(2))];
+qMat = [qMat;dobot.trapezoidal([wayPointMat(8,:);wayPointMat(2,:)],steps, true, sugarCane(2))];
+qMat = [qMat;dobot.rmrc(steps, deltaTime, sugarCane(2))];
 
 plotOpts.plotFaces = true;
 for i = 1:10
     [vertex,faces,faceNormals,jug] = RectangularPrism([(-0.3+0.05*i),-0.2,0],[(-0.4+0.05*i),-0.1,0.15],plotOpts);
     pause(0.1);
     if (i < 10)
-        try delete(jug.faces); end;
+        try delete(jug.faces); end
     end
 end
 
-qMat = dobot.trapezoidal([wayPointMat(3,:);wayPointMat(5,:)],steps); % Secure planned joint state of robot
+qMtx = dobot.trapezoidal([wayPointMat(3,:);wayPointMat(5,:)],steps); % Secure planned joint state of robot
 
-for i = 1: size(qMat,1)
-    [intersectP, result(i)] = IsCollision(dobot.model,qMat(i,:),faces,vertex,faceNormals,false);
+for i = 1: size(qMtx,1)
+    [intersectP, result(i)] = IsCollision(dobot.model,qMtx(i,:),faces,vertex,faceNormals,false);
     if result(i)
         break;
     end
 end
 
+qMat = [qMat;qMtx(1:(i-3),:)];
 for j = 1:i-3
-    dobot.model.animate(qMat(j,:));
+    dobot.model.animate(qMtx(j,:));
     pause(0.02)
 end
-T = dobot.model.fkine(qMat(j,:));
-dobot.trapezoidal([T(1:2,4)' 0.02+offsetZ; T(1:2,4)' 0.12+offsetZ],steps,true);
-dobot.trapezoidal([T(1:2,4)' 0.12+offsetZ; wayPointMat(5,1:2) 0.12+offsetZ],steps,true);
-dobot.trapezoidal([wayPointMat(5,1:2) 0.12+offsetZ; wayPointMat(5,:)],steps,true);
+T = dobot.model.fkine(qMtx(j,:));
 
-% dobot.trapezoidal([wayPointMat(3,:);wayPointMat(5,:)],steps,true);
-dobot.trapezoidal([wayPointMat(5,:);wayPointMat(8,:)],steps, true, sugarCane(3));
-dobot.trapezoidal([wayPointMat(8,:);wayPointMat(2,:)],steps, true, sugarCane(3));
-dobot.rmrc(steps, deltaTime, sugarCane(3));
-dobot.trapezoidal([wayPointMat(3,:);wayPointMat(2,:)],steps);
+qMat = [qMat;dobot.trapezoidal([T(1:2,4)' 0.02+offsetZ; T(1:2,4)' 0.12+offsetZ],steps,true)];
+qMat = [qMat;dobot.trapezoidal([T(1:2,4)' 0.12+offsetZ; wayPointMat(5,1:2) 0.12+offsetZ],steps,true)];
+qMat = [qMat;dobot.trapezoidal([wayPointMat(5,1:2) 0.12+offsetZ; wayPointMat(5,:)],steps,true)];
+
+% [X, Y, Z] = ellipsoid(0.3,0,0.05,0.05,0.05,0.01);
+% hand = surf(X,Y,Z);
+% dobot.sensorP = [0.3,0,0.05];
+
+qMat = [qMat;dobot.trapezoidal([wayPointMat(5,:);wayPointMat(8,:)],steps, true, sugarCane(3))];
+qMat = [qMat;dobot.trapezoidal([wayPointMat(8,:);wayPointMat(2,:)],steps, true, sugarCane(3))];
+
+dobot.sensorP = [99;99;99];
+qMat = [qMat;dobot.rmrc(steps, deltaTime, sugarCane(3))];
+qMat = [qMat;dobot.trapezoidal([wayPointMat(3,:);wayPointMat(2,:)],steps)];
 
 %% IsCollision
 % This is based upon the output of questions 2.5 and 2.6

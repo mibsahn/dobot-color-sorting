@@ -3,7 +3,7 @@ classdef DobotClass < handle
         model;
         simulation;
         eStop = false;
-        sensorP;
+        sensorP = [-99;-99;-99];
         toolOffset = transl(0.06,0,0.065);
         workspace = [-0.5 0.5 -0.5 0.5 -0.7814 0.5];
         qNeutral = [0,deg2rad(45),deg2rad(90),deg2rad(45),0];
@@ -114,11 +114,11 @@ classdef DobotClass < handle
                     payload.MoveObj([(effectorPos(1:3,4)'+[0.02 0 -0.0954]) 0 0 0]);
                 end
                 drawnow();
-                pause(0.02)
+                pause(0.1)
             end
         end
         %% RMRC
-        function rmrc(self, steps, deltaTime, obj)
+        function qOut = rmrc(self, steps, deltaTime, obj)
             %RMRC Move robot in RMRC
             %   Generate trajectory and animate robot motion
             
@@ -148,7 +148,16 @@ classdef DobotClass < handle
                 for j = 1:steps-1
                     if self.sensors_sim(qMat(j,:,i))
                         disp('Obstacle detected, halt operation!')
+                        qOut = [];
+                        self.eStop = true;
                         return
+                    end
+                    if (evalin("base","eStop") || self.eStop)
+                        self.eStop = true;
+                        while self.eStop
+                            self.eStop = evalin("base","eStop");
+                            pause(0.5);
+                        end
                     end
                     T = self.model.fkine(qMat(j,:,i));               % Get forward transformation at current joint state
                     deltaTrans = trans(:,j+1,i) - T(1:3,4);         % Get position error from next waypoint
@@ -178,12 +187,14 @@ classdef DobotClass < handle
                     %         end
                     qMat(j+1,:,i) = qMat(j,:,i) + deltaTime*qdot(j,:,i);        % Update next joint state
                     self.model.animate(qMat(j,:,i));
+
                     obj.MoveObj([(T(1:3,4)'+[0.02 0 -0.0954]) 0 0 0]);
                     drawnow();
                     pause(0.02);
                 end
                 delete(text_h);
             end
+            qOut = qMat;
             obj.MoveObj([0.3 0 -0.1 0 0 0]);
             pause(0.2);
             obj.MoveObj([0.3 0 -0.16 0 0 0]);
@@ -216,6 +227,13 @@ classdef DobotClass < handle
                 if (nargin < 4)
                     continue
                 elseif (animate)
+                    if (evalin("base","eStop") || self.eStop)
+                        self.eStop = true;
+                        while self.eStop
+                            self.eStop = evalin("base","eStop");
+                            pause(0.5);
+                        end
+                    end
                     self.model.animate(qMat(i,:));
                     if (nargin == 5)
                         effectorPos = self.model.fkine(qMat(i,:));
