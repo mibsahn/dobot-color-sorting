@@ -18,7 +18,7 @@ axis tight
 camlight;
 pause(4);
 %% GUI
-gui = gui();
+g = gui();
 %% Animation
 % Resolved Motion Rate Control (RMRC)
 
@@ -65,10 +65,6 @@ plotOpts.plotFaces = true;
 for i = 1:10
     try delete(jug.faces); end;
     [vertex,faces,faceNormals,jug] = RectangularPrism([(-0.3+0.05*i),-0.2,0],[(-0.4+0.05*i),-0.1,0.15],plotOpts);
-    pause(0.1);
-    if (i < 10)
-        try delete(jug.faces); end
-    end
     pause(0.02);
 end
 
@@ -96,7 +92,6 @@ for i = 1:10
     try delete(jug.faces); end;
     [vertex,faces,faceNormals,jug] = RectangularPrism([(0.2+0.05*i),-0.2,0],[(0.1+0.05*i),-0.1,0.15],plotOpts);
     pause(0.02);
-    try delete(jug.faces); end;
 end
 
 disp('Moving third sugar cane.');
