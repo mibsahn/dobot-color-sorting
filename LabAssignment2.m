@@ -6,7 +6,7 @@ addpath(genpath('./Addition'));
 q0 = zeros(1,5);
 q1 = [-pi/2 pi/2 0 0 0];
 dobot = DobotClass;
-dobot.PlotModel3d;
+% dobot.PlotModel3d;
 view(3);
 axis tight;
 hold on
